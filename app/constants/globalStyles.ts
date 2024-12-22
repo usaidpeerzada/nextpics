@@ -8,5 +8,3 @@ export default StyleSheet.create({
     backgroundColor: "#f8f8f8",
   },
 });
-
-export const CREDENTIALS_KEY = "nextcloudCredentials";

@@ -12,3 +12,7 @@ export interface WebDAVFile {
   filename: string;
   mime?: string;
 }
+
+export interface Credentials {
+  [key: string]: any;
+}
