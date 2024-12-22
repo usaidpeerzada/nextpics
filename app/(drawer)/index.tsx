@@ -11,7 +11,7 @@ import {
 import * as ImagePicker from "expo-image-picker";
 import PhotoGrid from "../components/PhotoGrid";
 import { usePhotos } from "../hooks/usePhotos";
-import { Ionicons } from "@expo/vector-icons"; // import Ionicons
+import { Ionicons, MaterialIcons } from "@expo/vector-icons"; // import Ionicons
 
 export default function HomePage() {
   const {
@@ -54,13 +54,13 @@ export default function HomePage() {
   };
 
   const renderContent = () => {
-    if (!isInitialized || loading) {
+    if ((!isInitialized || loading) && !error) {
       return (
         <View style={styles.loaderContainer}>
           <ActivityIndicator size="large" />
           <Text style={styles.loaderText}>
             {!isInitialized
-              ? "Connecting to Nextcloud..."
+              ? "Try to refresh in a few seconds..."
               : "Loading photos..."}
           </Text>
         </View>
@@ -72,7 +72,7 @@ export default function HomePage() {
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>{error}</Text>
           <TouchableOpacity style={styles.retryButton} onPress={refreshPhotos}>
-            <Text style={styles.retryButtonText}>Retry</Text>
+            <MaterialIcons name="refresh" size={24} color="#fff" />{" "}
           </TouchableOpacity>
         </View>
       );
@@ -80,14 +80,6 @@ export default function HomePage() {
 
     return (
       <>
-        {/* You can remove or comment out the old upload button if you don't need it */}
-        {/* <TouchableOpacity
-          style={styles.uploadButton}
-          onPress={handleUploadPhoto}
-        >
-          <Text style={styles.uploadButtonText}>Upload Photo</Text>
-        </TouchableOpacity> */}
-
         <PhotoGrid
           photos={photos}
           refreshControl={
@@ -144,37 +136,23 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   retryButton: {
-    backgroundColor: "#007aff",
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
+    width: 40, // Circular button dimensions
+    height: 40,
+    borderRadius: 20, // Makes it circular
+    backgroundColor: "#1e60aa", // Blue color for button
+    alignItems: "center",
+    justifyContent: "center",
   },
   retryButtonText: {
     color: "#fff",
     fontSize: 16,
     fontWeight: "bold",
   },
-
-  // Remove or comment out if you no longer need this style:
-  // uploadButton: {
-  //   backgroundColor: "#007aff",
-  //   padding: 12,
-  //   borderRadius: 8,
-  //   alignItems: "center",
-  //   margin: 16,
-  // },
-  // uploadButtonText: {
-  //   color: "#fff",
-  //   fontSize: 16,
-  //   fontWeight: "bold",
-  // },
-
-  // FAB button style
   fabButton: {
     position: "absolute",
     bottom: 20,
     right: 20,
-    backgroundColor: "#007aff",
+    backgroundColor: "#1e60aa",
     width: 56,
     height: 56,
     borderRadius: 28,
