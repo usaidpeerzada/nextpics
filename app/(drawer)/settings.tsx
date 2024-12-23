@@ -1,4 +1,3 @@
-// app/(drawer)/settings.tsx
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -7,20 +6,37 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
-  Alert,
 } from "react-native";
-import { saveCredentials, getCredentials } from "../utils/secureStore";
-import { CREDENTIALS_KEY } from "../constants/globalStyles";
+import {
+  saveCredentials,
+  getCredentials,
+  deleteCredentials,
+} from "../utils/secureStore";
+import { CREDENTIALS_KEY } from "../constants/constants";
 import { NextcloudCredentials } from "../interfaces/types";
+import Snackbar from "../components/Snackbar";
+import { useNavigation } from "expo-router";
 
 export default function SettingsScreen() {
+  const navigation = useNavigation();
+  const isFocused = navigation.isFocused();
   const [server, setServer] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [isSnackbarVisible, setSnackbarVisible] = useState(false);
 
-  // Fetch stored credentials on load
+  const showSnackbar = (message: string) => {
+    setSnackbarMessage(message);
+    setSnackbarVisible(true);
+  };
+
+  const hideSnackbar = () => {
+    setSnackbarVisible(false);
+  };
+
   const loadCredentials = async () => {
     try {
       const storedCredentials = (await getCredentials(
@@ -33,16 +49,28 @@ export default function SettingsScreen() {
       }
     } catch (error) {
       console.error("Error loading credentials:", error);
-      Alert.alert("Error", "Failed to load stored credentials.");
+      showSnackbar("Failed to load stored credentials.");
     }
   };
 
-  useEffect(() => {
-    loadCredentials();
-  }, []);
+  const deleteStoredCredentials = async () => {
+    try {
+      await deleteCredentials(CREDENTIALS_KEY);
+      setServer("");
+      setUsername("");
+      setPassword("");
+      showSnackbar("Credentials deleted successfully!");
+    } catch (error) {
+      console.error("Error deleting credentials:", error);
+      showSnackbar("Failed to delete credentials.");
+    }
+  };
 
-  // Save credentials as a single object
   const saveNextcloudCredentials = async () => {
+    if (!server || !username || !password) {
+      showSnackbar("Please fill in all fields.");
+      return;
+    }
     setIsSaving(true);
     setIsSaved(false);
 
@@ -50,19 +78,25 @@ export default function SettingsScreen() {
       const credentials = { server, username, password };
       await saveCredentials(CREDENTIALS_KEY, credentials);
       setIsSaved(true);
-      Alert.alert("Success", "Credentials saved successfully!");
+      showSnackbar("Credentials saved successfully!");
     } catch (error) {
       console.error("Error saving credentials:", error);
-      Alert.alert("Error", "Failed to save credentials.");
+      showSnackbar("Failed to save credentials.");
     } finally {
       setIsSaving(false);
       setIsSaved(true);
     }
   };
 
+  useEffect(() => {
+    loadCredentials();
+    if (isFocused) {
+      setIsSaved(false);
+    }
+  }, []);
+
   return (
     <View style={styles.container}>
-      {/* Nextcloud Credentials Section */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Nextcloud Credentials</Text>
         <TextInput
@@ -84,35 +118,49 @@ export default function SettingsScreen() {
           onChangeText={setPassword}
           secureTextEntry
         />
-        <TouchableOpacity
-          style={[
-            styles.saveButton,
-            isSaving
-              ? styles.saveButtonSaving
-              : isSaved
-              ? styles.saveButtonSaved
-              : null,
-          ]}
-          onPress={saveNextcloudCredentials}
-          disabled={isSaving || isSaved}
-        >
-          {isSaving ? (
-            <ActivityIndicator color="#fff" />
-          ) : isSaved ? (
-            <Text style={styles.saveButtonText}>✔</Text>
-          ) : (
-            <Text style={styles.saveButtonText}>Save</Text>
-          )}
-        </TouchableOpacity>
+        <View style={styles.buttonRow}>
+          <TouchableOpacity
+            style={[
+              styles.saveButton,
+              isSaving
+                ? styles.saveButtonSaving
+                : isSaved
+                ? styles.saveButtonSaved
+                : null,
+            ]}
+            onPress={saveNextcloudCredentials}
+            disabled={isSaving || isSaved}
+          >
+            {isSaving ? (
+              <ActivityIndicator color="#fff" />
+            ) : isSaved ? (
+              <Text style={styles.saveButtonText}>✔</Text>
+            ) : (
+              <Text style={styles.saveButtonText}>Save</Text>
+            )}
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.deleteButton}
+            onPress={deleteStoredCredentials}
+          >
+            <Text style={styles.deleteButtonText}>Delete</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
-      {/* General Settings Section */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>General Settings</Text>
         <Text style={styles.placeholderText}>
           Additional settings coming soon...
         </Text>
       </View>
+
+      {/* Snackbar */}
+      <Snackbar
+        message={snackbarMessage}
+        visible={isSnackbarVisible}
+        onDismiss={hideSnackbar}
+      />
     </View>
   );
 }
@@ -132,7 +180,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 3 },
-    elevation: 3, // For Android shadow
+    elevation: 3,
   },
   sectionTitle: {
     fontSize: 18,
@@ -148,20 +196,39 @@ const styles = StyleSheet.create({
     fontSize: 16,
     backgroundColor: "#f9f9f9",
   },
+  buttonRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
   saveButton: {
-    backgroundColor: "#007aff",
+    backgroundColor: "#1e60aa",
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 8,
     alignItems: "center",
+    flex: 1,
+    marginRight: 8,
   },
   saveButtonSaving: {
-    backgroundColor: "#007aff80", // Light blue when saving
+    backgroundColor: "#007aff80",
   },
   saveButtonSaved: {
-    backgroundColor: "#4caf50", // Green when saved
+    backgroundColor: "#4caf50",
   },
   saveButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  deleteButton: {
+    backgroundColor: "#f44336",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignItems: "center",
+    flex: 1,
+  },
+  deleteButtonText: {
     color: "#fff",
     fontSize: 16,
     fontWeight: "bold",
