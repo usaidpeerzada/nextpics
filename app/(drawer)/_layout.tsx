@@ -14,6 +14,7 @@ import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { getSingleCredential } from "../utils/secureStore";
 import { CREDENTIALS_KEY, USER_NAME } from "../constants/constants";
 import { Credentials } from "../interfaces/types";
+import * as MediaLibrary from "expo-media-library";
 
 const CustomDrawerContent = (props: any) => {
   const { state, navigation } = props;
@@ -26,6 +27,19 @@ const CustomDrawerContent = (props: any) => {
 
   useEffect(() => {
     loadUsername();
+  }, []);
+
+  const requestMediaLibraryPermission = async () => {
+    const { status } = await MediaLibrary.requestPermissionsAsync();
+    if (status !== "granted") {
+      console.error("Permission to access media library is required!");
+    } else {
+      console.log("Media library permission granted!");
+    }
+  };
+
+  useEffect(() => {
+    requestMediaLibraryPermission();
   }, []);
   return (
     <DrawerContentScrollView
